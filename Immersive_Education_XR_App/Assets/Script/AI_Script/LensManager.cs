@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using TMPro;
@@ -27,6 +27,9 @@ public class LensManager : MonoBehaviour
     private Vector2 hiddenPos;
     private Vector2 visiblePos;
 
+    [Header("AR Context")]
+    public string currentSubject = "";
+
     private Texture2D latestImage;
 
     void Start()
@@ -40,8 +43,28 @@ public class LensManager : MonoBehaviour
         resultPanel.anchoredPosition = hiddenPos;
     }
 
+    // ── Prompt Builder ────────────────────────────────────────────────────────
+    string BuildPrompt(string userQuestion)
+    {
+        return "You are an educational AR assistant embedded in a science learning app for students.and also make it feel like an app, don't just reply like great AR model or great question, just pure answer " +
+               "A student is looking at an AR model of " + currentSubject + " through their phone camera. " +
+               "YOUR RULES follow these strictly: " +
+               "1. Answer ONLY about the subject: " + currentSubject + ". " +
+               "2. IGNORE everything else visible in the image, the background, the phone screen, UI buttons, hands, furniture, cables, or any real-world objects. " +
+               "3. Do describe what you see in the image. Just answer the question based on what you actually see. " +
+               "4. Keep your answer clear, factual, and engaging for a student aged 10-16. " +
+               "5. Use short paragraphs. No bullet points. " +
+               "Student question: " + userQuestion;
+    }
+
+    // ── Button Handlers ───────────────────────────────────────────────────────
     void OnTalkClick() { StartCoroutine(SnapAndAppend()); }
-    void OnCloseClick() { StartCoroutine(SlidePanel(hiddenPos)); talkButton.gameObject.SetActive(true); }
+
+    void OnCloseClick()
+    {
+        StartCoroutine(SlidePanel(hiddenPos));
+        talkButton.gameObject.SetActive(true);
+    }
 
     void OnSendClick()
     {
@@ -49,9 +72,15 @@ public class LensManager : MonoBehaviour
         if (string.IsNullOrEmpty(userMessage)) return;
         AddToChat("You", userMessage);
         inputField.text = "";
-        StartCoroutine(AskGemini(userMessage, latestImage));
+        if (latestImage == null)
+        {
+            AddToChat("Error", "No image captured yet. Tap the scan button first.");
+            return;
+        }
+        StartCoroutine(AskGemini(BuildPrompt(userMessage), latestImage));
     }
 
+    // ── Snap & Send ───────────────────────────────────────────────────────────
     IEnumerator SnapAndAppend()
     {
         talkButton.gameObject.SetActive(false);
@@ -59,40 +88,54 @@ public class LensManager : MonoBehaviour
         latestImage = ScreenCapture.CaptureScreenshotAsTexture();
         StartCoroutine(SlidePanel(visiblePos));
         AddToChat("System", "New scan captured...");
-        StartCoroutine(AskGemini("What is in this new image?", latestImage));
+        string autoPrompt = BuildPrompt("Give a comprehensive educational overview of " + currentSubject);
+        StartCoroutine(AskGemini(autoPrompt, latestImage));
     }
 
-    // --- UPDATED: ADDS TEXT AND TRIGGERS SCROLL ---
+    // ── Chat UI ───────────────────────────────────────────────────────────────
     void AddToChat(string sender, string message)
     {
-        string color = (sender == "You") ? "#00FF00" : "#FFFFFF";
+        string color = "#FFFFFF";
+        if (sender == "You") color = "#00FF00";
         if (sender == "System") color = "#FFFF00";
+        if (sender == "Error") color = "#FF4444";
 
-        resultText.text += $"\n<color={color}><b>{sender}:</b></color> {message}\n";
-
-        // Trigger the safe auto-scroll
+        resultText.text += "\n<color=" + color + "><b>" + sender + ":</b></color> " + message + "\n";
         StartCoroutine(ScrollToBottom());
     }
 
-    // --- NEW: THE SMOOTH SCROLL LOGIC ---
     IEnumerator ScrollToBottom()
     {
-        // Wait for end of frame TWICE to ensure the Content Size Fitter 
-        // has finished calculating the new height.
         yield return new WaitForEndOfFrame();
         yield return new WaitForEndOfFrame();
-
         if (scrollView != null)
-        {
-            scrollView.verticalNormalizedPosition = 0f; // 0f means "Bottom"
-        }
+            scrollView.verticalNormalizedPosition = 0f;
     }
 
+    // ── Gemini API Call ───────────────────────────────────────────────────────
     IEnumerator AskGemini(string prompt, Texture2D image)
     {
+        if (image == null)
+        {
+            AddToChat("Error", "No image captured. Try pressing Talk to AI again.");
+            yield break;
+        }
+
+        string safePrompt = prompt
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", "\\r");
+
         byte[] imageBytes = image.EncodeToJPG(50);
         string base64Image = System.Convert.ToBase64String(imageBytes);
-        string json = "{ \"contents\": [{ \"parts\": [ { \"text\": \"" + prompt + "\" }, { \"inline_data\": { \"mime_type\": \"image/jpeg\", \"data\": \"" + base64Image + "\" } } ] }] }";
+
+        string json = "{\"contents\":[{\"parts\":[" +
+                      "{\"text\":\"" + safePrompt + "\"}," +
+                      "{\"inline_data\":{\"mime_type\":\"image/jpeg\",\"data\":\"" + base64Image + "\"}}" +
+                      "]}]}";
+
+        AddToChat("System", "Sending to Gemini...");
 
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
@@ -104,17 +147,29 @@ public class LensManager : MonoBehaviour
 
             yield return request.SendWebRequest();
 
-            if (request.result == UnityWebRequest.Result.Success)
+            if (request.result != UnityWebRequest.Result.Success)
             {
-                GeminiResponse response = JsonUtility.FromJson<GeminiResponse>(request.downloadHandler.text);
-                if (response != null && response.candidates.Length > 0)
-                {
-                    AddToChat("Gemini", response.candidates[0].content.parts[0].text);
-                }
+                AddToChat("Error", "Network failed: " + request.error);
+                yield break;
             }
+
+            string rawResponse = request.downloadHandler.text;
+            Debug.Log("[Gemini Raw] " + rawResponse);
+
+            GeminiResponse response = JsonUtility.FromJson<GeminiResponse>(rawResponse);
+
+            if (response == null || response.candidates == null || response.candidates.Length == 0)
+            {
+                AddToChat("Error", "Bad response: " + rawResponse);
+                yield break;
+            }
+
+            string geminiReply = response.candidates[0].content.parts[0].text;
+            AddToChat("Gemini", geminiReply);
         }
     }
 
+    // ── Panel Animation ───────────────────────────────────────────────────────
     IEnumerator SlidePanel(Vector2 targetPos)
     {
         float elapsed = 0f;
@@ -129,7 +184,7 @@ public class LensManager : MonoBehaviour
     }
 }
 
-// --- DATA CLASSES ---
+// ── Gemini Data Classes ───────────────────────────────────────────────────────
 [System.Serializable] public class GeminiResponse { public Candidate[] candidates; }
 [System.Serializable] public class Candidate { public Content content; }
 [System.Serializable] public class Content { public Part[] parts; }

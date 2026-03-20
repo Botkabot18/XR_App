@@ -57,3 +57,23 @@ MonoBehaviour:
     m_SpecifySize: 1
     m_Name: Mars
     m_Texture: {fileID: 2800000, guid: a694bca73c1ac77439e5e8b9a23902b4, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 5402070978954393635
+      m_GuidHigh: 3732847152274609036
+    m_SerializedTextureGuid:
+      m_GuidLow: 10008369724232905192
+      m_GuidHigh: 17433756036348940603
+    m_Size: {x: 0, y: 0}
+    m_SpecifySize: 0
+    m_Name: Deer
+    m_Texture: {fileID: 2800000, guid: d1ad31e8df3c8ae43b91663fbf24f1f1, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 5585671195824075856
+      m_GuidHigh: 6286062786805186439
+    m_SerializedTextureGuid:
+      m_GuidLow: 15894440017501959055
+      m_GuidHigh: 15509560074677804857
+    m_Size: {x: 0, y: 0}
+    m_SpecifySize: 0
+    m_Name: Bear
+    m_Texture: {fileID: 2800000, guid: caf5338f64fbdc94395fc0f9b6063dd7, type: 3}

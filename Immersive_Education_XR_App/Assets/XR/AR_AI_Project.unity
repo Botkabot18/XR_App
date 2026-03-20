@@ -816,7 +816,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: -16, y: 7.3}
-  m_SizeDelta: {x: 160, y: 70.89}
+  m_SizeDelta: {x: 105, y: 71}
   m_Pivot: {x: 1, y: 0}
 --- !u!1 &340661661
 GameObject:
@@ -1339,10 +1339,13 @@ MonoBehaviour:
   mainCamera: {fileID: 1388524966}
   exitButton: {fileID: 1170206377}
   planetPrefabs:
+  - {fileID: 3104289799168346596, guid: f22935f620695024aa2eb31bc09bfd31, type: 3}
   - {fileID: 8099466642308087836, guid: ed20f5ad38fc6b844a9afeb1fd7d697f, type: 3}
   - {fileID: 4597525261633941850, guid: dcdb1e35afac5274582920130ab8b933, type: 3}
-  - {fileID: 3104289799168346596, guid: f22935f620695024aa2eb31bc09bfd31, type: 3}
   - {fileID: 2007680954089515732, guid: e513cbe11ddb681459e891ea598b3882, type: 3}
+  - {fileID: 2494731477863526406, guid: 2eec4cf00fe53a6469249269f52509bd, type: 3}
+  - {fileID: 5627755622982398287, guid: 93dc3b6cabff02741843d81075805ff4, type: 3}
+  lensManager: {fileID: 1960156414}
   spawnDistance: 1.5
   initialScale: 2
 --- !u!1 &1170206377
@@ -1560,7 +1563,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1713322422}
   m_HandleRect: {fileID: 1713322421}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -2414,7 +2417,7 @@ RectTransform:
   m_GameObject: {fileID: 1882192609}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.98, y: 0.89, z: 1}
+  m_LocalScale: {x: 0.98, y: 0.825, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1283088432}
@@ -2773,7 +2776,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7501bea9a4a2bd44ab7b9ff94df9ce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  apiKey: AIzaSyAS4EJSNgKnHCdCFtx4PqZYbb5oNgYjkwc
+  apiKey: 
   resultPanel: {fileID: 1443774646}
   inputField: {fileID: 340661662}
   resultText: {fileID: 241436657}
@@ -2782,6 +2785,7 @@ MonoBehaviour:
   closeButton: {fileID: 154542943}
   sendButton: {fileID: 320621093}
   animationSpeed: 0.5
+  currentSubject: 
 --- !u!4 &1960156415
 Transform:
   m_ObjectHideFlags: 0
